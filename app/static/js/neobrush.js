@@ -74,7 +74,7 @@ function setup() {
     updateSource(1);
     canvas = createCanvas(975, 700);
     canvas.parent('neobrush');
-	
+
     art = createGraphics(canvas.width, canvas.height);
     art.background(0);
 
@@ -91,24 +91,29 @@ function setup() {
     ui.save.mousePressed(saveme);
 
     ui.preset = getElement('save-preset');
-	
+
 	console.log('subscribing to the local data stream...');
-	var evtSrc = new EventSource("/v1/simulator/stream");
+//http://46.101.168.163:5111/
+	var evtSrc = new EventSource("http://46.101.168.163:5111/v1/simulator/stream"); // "/v1/simulator/stream");
     evtSrc.onmessage = new_data_from_sensor;
 }
 
 var nmousepressed;
 var sensorX = 0;
 var sensorY = 0;
-var max_sensor6 = 0;
-var max_sensor4 = 0;
-var min_sensor6 = 10000;
-var min_sensor4 = 10000;
+var max_sensor6 = 15000;
+var max_sensor4 = 15000;
+var min_sensor6 = 15000;
+var min_sensor4 = 15000;
 
-
-var sensor6_window = []
+var sensor3_window =[]
 var sensor4_window = []
+var sensor5_window = []
+var sensor6_window = []
+
+var sensor3_sum = 0;
 var sensor4_sum = 0;
+var sensor5_sum = 0;
 var sensor6_sum = 0;
 var window_size = 60;
 
@@ -116,55 +121,81 @@ var window_size = 60;
 function new_data_from_sensor(e)
 {
    var jsonData = JSON.parse(e.data);
-   var sensor6 = jsonData.values[0].value.measurments.sensor5;
+   var sensor3 = jsonData.values[0].value.measurments.sensor3;
    var sensor4 = jsonData.values[0].value.measurments.sensor4;
-   
-  
+   var sensor5 = jsonData.values[0].value.measurments.sensor5;
+   var sensor6 = jsonData.values[0].value.measurments.sensor6;
+
+
    //max_sensor6 = max(sensor6, max_sensor6);
    //max_sensor4 = max(sensor4, max_sensor4);
    //min_sensor6 = min(sensor6, min_sensor6);
    //min_sensor4 = min(sensor4, min_sensor4);
-
+   sensor3_sum += sensor3;
    sensor4_sum += sensor4;
+   sensor5_sum += sensor5;
    sensor6_sum += sensor6;
-   
+
+   sensor3_window.push(sensor3);
    sensor4_window.push(sensor4);
+   sensor5_window.push(sensor5);
    sensor6_window.push(sensor6);
-   
+
+   if (sensor3_window.length > window_size)
+   {
+		sensor3_sum -= sensor3_window.shift()
+   }
    if (sensor4_window.length > window_size)
    {
-		sensor4_sum -= sensor4_window.shift()
+    sensor4_sum -= sensor4_window.shift()
+   }
+   if (sensor5_window.length > window_size)
+   {
+		sensor5_sum -= sensor5_window.shift()
+   }
+   if (sensor6_window.length > window_size)
+   {
 		sensor6_sum -= sensor6_window.shift()
    }
-   
+
+
+/*
    var sensor4_mean = sensor4_sum / sensor4_window.length;
    var sensor6_mean = sensor6_sum / sensor6_window.length;
    min_sensor4 = Math.min.apply(null, sensor4_window);
    min_sensor6 = Math.min.apply(null, sensor6_window);
    max_sensor4 = Math.max.apply(null, sensor4_window);
    max_sensor6 = Math.max.apply(null, sensor6_window);
-   
+
    console.log('sensor4_mean: ' + sensor4_mean);
    console.log('sensor6_mean: ' + sensor6_mean);
    console.log('window length: ' + sensor4_window.length);
-   
+
+
    if (sensor4 <= sensor4_mean)
-      sensorX = (sensor4) / (sensor4_mean) * (canvas.width/2);	
+      sensorX = (sensor4) / (sensor4_mean) * (canvas.width/2);
    else
       sensorX = ((sensor4 - sensor4_mean) / (max_sensor4 - sensor4_mean) * (canvas.width/2) + (canvas.width/2)) * 0.8
-	  
+
    if (sensor6 <= sensor6_mean)
-      sensorY = (sensor6) / (sensor6_mean) * (canvas.height/2);	
+      sensorY = (sensor6) / (sensor6_mean) * (canvas.height/2);
    else
       sensorY = ((sensor6 - sensor6_mean) / (max_sensor6 - sensor6_mean) * (canvas.height/2) + (canvas.height/2)) * 0.8
+*/
+   sensorX = ((sensor4 - sensor3) / max_sensor4 ) * (canvas.width / 2) + (canvas.width / 2);
+   sensorY = ((sensor5 - sensor6) / max_sensor6 ) * (canvas.height / 2) + (canvas.height / 2);
+   console.log('sensor3: ' + sensor3);
+   console.log('sensor4: ' + sensor4);
+   console.log('sensor5: ' + sensor5);
+   console.log('sensor6: ' + sensor6);
 
    console.log('sensorX: ' + sensorX);
    console.log('sensorY: ' + sensorY);
 
-   
-   
+
+
   // sensorX = (sensor4 - min_sensor4) / (max_sensor4 - min_sensor4 + 0.00001) * canvas.width;
-  // sensorY = (sensor6 - min_sensor6) / (max_sensor6 - min_sensor6 + 0.00001) * canvas.height; 
+  // sensorY = (sensor6 - min_sensor6) / (max_sensor6 - min_sensor6 + 0.00001) * canvas.height;
 }
 
 function draw() {
@@ -203,13 +234,13 @@ function releaseLines()
    lines = [];
 }
 
-function mousePressed() 
+function mousePressed()
 {
 	releaseLines()
 	addLines()
 }
 
-function mouseReleased() 
+function mouseReleased()
 {
 
 }
